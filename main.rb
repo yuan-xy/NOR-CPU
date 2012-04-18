@@ -1,8 +1,12 @@
-Example = "String for testing"
+#!/usr/bin/ruby
+
+$embedded = true
 
 load 'assembler.rb'  
+Assembler.asm("crc16.asm")
 
 load 'norcpu.rb'
+NorCpu.new.load_run
 
 def calc_crc16(data)
   crc = 0xFFFF
@@ -17,4 +21,4 @@ def calc_crc16(data)
   return crc
 end
 
-puts "Ruby CRC16: %04X" % calc_crc16(Example)
+puts "Ruby CRC16: %04X" % calc_crc16("String for testing")

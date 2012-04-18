@@ -1,5 +1,5 @@
 # NORCPU code
-
+Example = "String for testing"
 needle = literal Example + "\x00"
 
 i, ch, t, ptr, crc16 = var 5
@@ -28,4 +28,5 @@ label :skip_xor                  # skip_xor:
       JMPi :crc_loop             #   goto crc_loop
 
 label :exit
+      MOV crc16, REG0	
       EXITi()

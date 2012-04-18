@@ -1,8 +1,11 @@
+#!/usr/bin/ruby
+
 Text = []
 Labels = []
 Statics = {}
 Consts = {}
 Vars = {}
+Regs = {}
 Literals = {}
 
 def make_label(name = "")
@@ -11,6 +14,7 @@ def make_label(name = "")
   Labels.push name
   return name
 end
+
 
 def label(name) Text.push "#" + name.to_s end
 
@@ -32,9 +36,8 @@ def var(count = 1)
   return names
 end
 
-def init_var(value)
-  name = "var_%d" % Vars.size
-  Vars[name] = value
+def init_register(name,value)
+  Regs[name] = value
   return name
 end
 
@@ -43,9 +46,11 @@ def const(value)
   Consts[value] = "const_%d" % Consts.size
 end
 
-IP = init_var :entry
+IP = init_register("ip",0)
+SHIFT_REG = init_register("shift_reg",1)
+REG0 =  init_register("reg0",2)
 
-SHIFT_REG, CARRY_REG, ZERO_REG = var 3
+CARRY_REG, ZERO_REG = var 2
 
 def NOR(a, b, r)
   code a
@@ -146,7 +151,7 @@ end
 def FADD(mask, carry, a, b, r)
   tmp_a, tmp_b, bit_r = static :FADD_a, :FADD_b, :FADD_bit_r
   t1, t2 = static :FADD_t1, :FADD_t2
-  
+
   AND a, mask, tmp_a      # zeroing bits in 'a' except mask'ed
   AND b, mask, tmp_b      # zeroing bits in 'b' except mask'ed
   AND carry, mask, carry  # zeroing bits in 'carry' except mask'ed
@@ -269,43 +274,75 @@ def SHR(a, b)
   ANDi b, 0x7FFF, b
 end
 
+class Assembler
+  
+  def self.parse(asm_file)
+    load asm_file
+  end
+  
+  def self.dump(obj_file)
+    
+    assembly = []
+    Regs.each {|k,v| assembly.push 0 }
+    Text.each { |x| assembly.push x }
+    Vars.each { |k, v| assembly.push "#%s" % k, v }
+    Statics.each { |k, v| assembly.push "#%s" % k, v }
+    Consts.each { |k, v| assembly.push "#%s" % v, k }
+    Literals.each do |k, v|
+      assembly.push "#%s" % k
+      v.each_byte { |x| assembly.push x }
+    end
 
-load 'crc16.asm'  
+    offset = 0
+    labels = {}
+    assembly.each do |x|
+      x = x.to_s
+      if x.start_with? '#' then
+        labels[x[1..-1]] = offset
+      else 
+        offset = offset + 1
+      end
+    end
+    
+    Regs.each { |k, v| labels[k]=v }
+    if labels[IP]!=0 || labels[SHIFT_REG]!=1
+      raise "The memory mapped address of register IP and SHIFT_REG must be set to 0 and 1 respectively."
+    end
 
+    # Remove all list having labels.
+    assembly.delete_if { |x| x.to_s.start_with? "#" }
 
-assembly = []
-Vars.each { |k, v| assembly.push "#%s" % k, v }
-Text.each { |x| assembly.push x }
-Statics.each { |k, v| assembly.push "#%s" % k, v }
-Consts.each { |k, v| assembly.push "#%s" % v, k }
-Literals.each do |k, v|
-  assembly.push "#%s" % k
-  v.each_byte { |x| assembly.push x }
-end
+    # Substitute labels by values.
+    assembly.collect! do |x| 
+      if x.class==String ||  x.class==Symbol
+        labels[x.to_s.strip]
+      else
+        x
+      end
+    end
+    
+    puts assembly
 
-offset = 0
-labels = {}
-assembly.each do |x|
-  x = x.to_s
-  if x.start_with? '#' then
-    labels[x[1..-1]] = offset
-  else 
-    offset = offset + 1
+    File.open("a.out","wb") do |f|
+      f << assembly.pack("S*")
+    end
+  end
+  
+  def self.asm(asm_file, obj_file="a.out")
+    Assembler.parse(asm_file)
+    Assembler.dump(obj_file)
   end
 end
 
-# Remove all list having labels.
-assembly.delete_if { |x| x.to_s.start_with? "#" }
 
-# Substitute labels by values.
-assembly.collect! do |x| 
-  if x.class==String ||  x.class==Symbol
-    labels[x.to_s.strip]
+unless $embedded
+  if ARGV.size==0
+    puts "usage: ruby #{__FILE__} asm_file [obj_file]"
+    exit
+  elsif ARGV.size==1
+    Assembler.asm(ARGV[0])
   else
-    x
+    Assembler.asm(ARGV[0],ARGV[1])
   end
 end
 
-File.open("a.out","wb") do |f|
-  f << assembly.pack("S*")
-end
