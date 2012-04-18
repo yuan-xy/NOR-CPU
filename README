@@ -1,0 +1,49 @@
+The idea is to use just one function to compute everything. It suffices to do this for bits: bytes consist of bits, and if we can compute bits, we also can compute bytes, and everything made up of bytes. That is, everything.
+
+There are sixteen boolean functions of two arguments. Two of them are special: NOR and NAND. The other fourteen functions can be computed using only either NOR or NAND. We’ll use NOR.
+ 	
+NOR’s truth table is as follows:
+
+ 	===== ========
+ 	Input  Output
+ 	===== ========
+ 	 A B  A NOR B
+ 	----- --------
+ 	 0 0     1
+ 	 0 1     0
+ 	 1 0     0
+ 	 1 1     0
+ 	===== ========
+Remember, all other boolean functions of one or two arguments can be computed from NOR. For example:
+
+ 	NOT(a) = NOR(a, a)
+ 	AND(a, b) = NOT(OR(NOT(a), NOT(b)))
+ 	OR(a, b) = NOT(NOR(a, b))
+ 	XOR(a, b) = OR(AND(a, NOT(b)), AND(NOT(a), b)))
+
+Not surprisingly, NOR can be expressed via other functions:
+NOR(a, b) = NOT(OR(a, b))
+
+
+Defining Our CPU’s Architecture
+
+So NOR gives us everything we need to compute anything in bits. All right, we have established our single function. Now let’s sketch out an overall architecture for our CPU.
+
+We will have a linear memory organization containing 2^16 (65536 or 0xFFFF), cells, and consequently a range of valid addresses from 0 (0x0000) to 65535 (0xFFFF), 16 bits per address. 
+
+Normally, in both RISC and CISC architectures of modern CPUs, each individual instruction consists of two parts: an operation code, or opcode, and some number of arguments. The opcode specifies an operation to perform and the arguments define the details of a particular instruction.
+
+But remember, our CPU understands only one instruction. So we don’t need the opcode, because we always compute NOR! Our instructions will only contain the three arguments—the arguments of NOR. Each instruction will reside in three consecutive cells in the memory.
+
+ 	mem[mem[IP + 2]] = NOR(mem[mem[IP + 0]], mem[mem[IP + 1]])
+
+The register IP hold an address of the current instruction. 
+
+Imagine our memory as a linear array mem of 16-bit values:
+
+	 	mem[0], mem[1], mem[2], mem[3], ..., mem[65534], mem[65535]
+	 	IP , SHIFT_REG, REG0,   Code segment ..., Data segment ...
+	
+We defined 3 registers for this machine: IP, SHIFT_REG and REG0. These registers are accessed from special memory address. IP is mapped to memory address 0, SHIFT_REG is mapped to memory address 1, and REG0 mapped to memory address 2. After the register mapped memory area is the code segment,and followed by data segment. The memory layout and the object file layout is exactly the same.
+
+See also in http://pragprog.com/magazines/2012-03/the-nor-machine
