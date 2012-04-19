@@ -1,7 +1,7 @@
 #!/usr/bin/ruby
 
 class NorCpu
-  @@REGS = [:ip, :shift_reg, :reg0]
+  @@REGS = [:ip, :shift_reg, :sp, :reg0]
   @mem = []
   
   attr_reader :mem
@@ -26,17 +26,22 @@ class NorCpu
     File.open(obj_file) do |f|
       @mem = f.read.unpack("S*")
     end
+    puts "program @mem size: %d" % @mem.size
+    1000.times {|x| @mem << 0} #stack area
   end
   
   def run
     ip = NorCpu.reg_index(:ip)
     shift_reg = NorCpu.reg_index(:shift_reg)
+    sp = NorCpu.reg_index(:sp)
     reg0 = NorCpu.reg_index(:reg0)
     @mem[ip] = @@REGS.size
+    sp_low = @mem[sp]
 
-    puts "program @mem size: %d" % @mem.size
     while true do
       i = @mem[ip]
+      #raise "not code area!" if i>=sp_low || i<@@REGS.size
+      raise "stack overflow!" if @mem[sp]<sp_low || @mem[sp]>=@mem.size
       a = @mem[i + 0]
       b = @mem[i + 1]
       r = @mem[i + 2]
@@ -46,6 +51,7 @@ class NorCpu
       @mem[shift_reg] = ((f >> 15) & 1) | ((f & 0x7FFF) << 1)
       break if @mem[ip] == 0xFFFF
     end
+    puts "return value: #{@mem[reg0]}"
   end
   
   def load_run(obj_file="a.out")

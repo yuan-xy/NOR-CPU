@@ -48,9 +48,11 @@ end
 
 IP = init_register("ip",0)
 SHIFT_REG = init_register("shift_reg",1)
-REG0 =  init_register("reg0",2)
+SP =  init_register("sp",2)
+REG0 =  init_register("reg0",3)
 
 CARRY_REG, ZERO_REG = var 2
+
 
 def NOR(a, b, r)
   code a
@@ -142,6 +144,34 @@ def POKE(a, b)
 label l
   code const(0)   # <- b [initially '0']
   # END: NOR t, t, 0
+end
+
+def PUSH(a)
+  POKE a,SP
+  ADDi SP, 1, SP
+end
+
+def POP(a)
+  ADDi SP, -1, SP
+  PEEK SP, a
+end
+
+def CALL(prog)
+  label_call = make_label
+  call_t = static :CALL_t
+  MOV SP, call_t
+  PUSH const(label_call)
+  PUSH call_t
+  JMPi prog
+label label_call  
+end
+
+def RET
+  ret_t1,ret_t2  = static :RET_t1, :RET_t2
+  POP ret_t1
+  POP ret_t2
+  MOV ret_t1, SP
+  MOV ret_t2, IP
 end
 
 def EXITi
@@ -304,14 +334,14 @@ class Assembler
       end
     end
     
-    Regs.each { |k, v| labels[k]=v }
-    if labels[IP]!=0 || labels[SHIFT_REG]!=1
-      raise "The memory mapped address of register IP and SHIFT_REG must be set to 0 and 1 respectively."
-    end
-
+    #debugger
+    
     # Remove all list having labels.
     assembly.delete_if { |x| x.to_s.start_with? "#" }
 
+    Regs.each { |k, v| labels[k]=v }
+    assembly[Regs[SP]] = assembly.size
+    
     # Substitute labels by values.
     assembly.collect! do |x| 
       if x.class==String ||  x.class==Symbol
@@ -320,6 +350,9 @@ class Assembler
         x
       end
     end
+    
+    #debugger
+    #assembly[labels[SP]] = assembly.size
     
     #puts assembly
 
