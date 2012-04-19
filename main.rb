@@ -3,10 +3,14 @@
 $embedded = true
 
 load 'assembler.rb'  
-Assembler.asm("crc16.asm")
+Assembler.asm("crc16.asm","nor.bin")
 
 load 'norcpu.rb'
-NorCpu.new.load_run
+cpu = NorCpu.new
+cpu.load_run("nor.bin")
+
+puts "NOR CPU CRC16: %04X" % cpu.reg(:reg0)
+#puts cpu.mem
 
 def calc_crc16(data)
   crc = 0xFFFF

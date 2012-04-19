@@ -1,13 +1,27 @@
 #!/usr/bin/ruby
 
 class NorCpu
-  
+  @@REGS = [:ip, :shift_reg, :reg0]
   @mem = []
+  
+  attr_reader :mem
 
   def self.nor(a, b)
     ~(a | b) & 0xFFFF
   end
-  
+
+  def self.reg_index(name)
+    @@REGS.index(name)
+  end
+    
+  def reg(name)
+    @mem[NorCpu.reg_index(name)]
+  end
+
+  def reg_set(name,value)
+    @mem[NorCpu.reg_index(name)] = value
+  end
+    
   def load(obj_file)
     File.open(obj_file) do |f|
       @mem = f.read.unpack("S*")
@@ -15,10 +29,10 @@ class NorCpu
   end
   
   def run
-    ip = 0
-    shift_reg = 1
-    reg0 = 2
-    @mem[ip] = 3
+    ip = NorCpu.reg_index(:ip)
+    shift_reg = NorCpu.reg_index(:shift_reg)
+    reg0 = NorCpu.reg_index(:reg0)
+    @mem[ip] = @@REGS.size
 
     puts "program @mem size: %d" % @mem.size
     while true do
@@ -32,8 +46,6 @@ class NorCpu
       @mem[shift_reg] = ((f >> 15) & 1) | ((f & 0x7FFF) << 1)
       break if @mem[ip] == 0xFFFF
     end
-
-    puts "NOR CPU CRC16: %04X" % @mem[reg0]
   end
   
   def load_run(obj_file="a.out")

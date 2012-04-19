@@ -321,9 +321,9 @@ class Assembler
       end
     end
     
-    puts assembly
+    #puts assembly
 
-    File.open("a.out","wb") do |f|
+    File.open(obj_file,"wb") do |f|
       f << assembly.pack("S*")
     end
   end
