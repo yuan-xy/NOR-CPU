@@ -9,16 +9,14 @@ label :entry
       MOVi needle, ptr
 label :crc_loop                  # crc_loop:
       PEEK ptr, ch               #   ch = *ptr
-      IS_0 ch                    #   is ch == 0?
-      JZi  :exit                 #   if yes, goto "exit"
+      JEQi ch, 0, :exit
       ANDi ch, 0xFF, ch          #   ch &= 0xFF
       XOR  crc16, ch, crc16      #   crc16 ^= ch
       MOVi 8, i
 label :loop_i                    # crc_loop_i:
       ANDi crc16, 1, t           #   t = crc16 & 1
       SHR crc16, crc16           #   crc16 >>= 1
-      IS_0 t                     #   is t == 0?
-      JZi :skip_xor              #   if yes, goto "skip_xor"
+      JEQi t, 0, :skip_xor
       XORi crc16, 0x8401, crc16  #   crc16 ^= 0x8401
 label :skip_xor                  # skip_xor:
       ADDi i, 0xFFFF, i          #   i -= 1

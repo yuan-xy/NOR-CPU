@@ -1,7 +1,7 @@
 #!/usr/bin/ruby
 
 class NorCpu
-  @@REGS = [:ip, :shift_reg, :sp, :reg0]
+  @@REGS = [:ip, :shift_reg, :sp, :reg0, :reg1, :reg2, :reg3]
   @mem = []
   
   attr_reader :mem

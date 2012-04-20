@@ -50,6 +50,9 @@ IP = init_register("ip",0)
 SHIFT_REG = init_register("shift_reg",1)
 SP =  init_register("sp",2)
 REG0 =  init_register("reg0",3)
+REG1 =  init_register("reg1",4)
+REG2 =  init_register("reg2",5)
+REG3 =  init_register("reg3",6)
 
 CARRY_REG, ZERO_REG = var 2
 
@@ -266,6 +269,18 @@ def IS_0(a)
   ZERO CARRY_REG
   ADC a, const(0xFFFF), t
   NOT CARRY_REG, ZERO_REG
+end
+
+def JEQi(a,imm,target)
+  ADD a, const(-imm), REG1
+  IS_0(REG1)
+  JZi(target)
+end
+
+def JNEQi(a,imm,target)
+  ADD a, const(-imm), REG1
+  IS_0(REG1)
+  JNZi(target)
 end
 
 # ip = (zero_reg == FFFF ? a : ip)
